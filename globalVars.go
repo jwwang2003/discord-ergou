@@ -13,6 +13,6 @@ var (
 	voiceInstances 	= map[string]*VoiceInstance{}
 	// syncronizing goroutines to prevent race conditions
 	mutex 					sync.Mutex
-	// item queueing channel
+	// song queueing channel
 	songChan 				chan SongPkg
 )

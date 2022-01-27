@@ -2,13 +2,14 @@ package structs
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
-	"os/exec"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jonas747/dca"
+	"github.com/kkdai/youtube/v2"
 )
 
 type VoiceInstance struct {
@@ -16,12 +17,10 @@ type VoiceInstance struct {
 	Session 		*discordgo.Session
 	encoder 		*dca.EncodeSession
 	stream 			*dca.StreamingSession
-	run 				*exec.Cmd
 	queueMutex 	sync.Mutex
 	audioMutex 	sync.Mutex
 	nowPlaying 	*Song
 	queue 			[]Song
-	recv 				[]int16
 	GuildID 		string
 	ChannelID 	string
 	speaking 		bool
@@ -33,7 +32,7 @@ type VoiceInstance struct {
 // basic methods for controlling the voice instance
 
 func (v *VoiceInstance) PlayQueue(song Song) ( bool ) {
-	v.QueueAppend(song)
+	v.QueuePrepend(song)
 	if v.speaking {
 		return true
 	}
@@ -44,7 +43,8 @@ func (v *VoiceInstance) PlayQueue(song Song) ( bool ) {
 
 		for {
 			if len(v.queue) == 0 {
-				log.Println("The queue is not empty!")
+				log.Println("The queue is empty!")
+				return
 			}
 
 			v.nowPlaying = v.QueueGet()
@@ -59,9 +59,9 @@ func (v *VoiceInstance) PlayQueue(song Song) ( bool ) {
 
 			v.DCA(v.nowPlaying.VideoURL)
 
-			if(v.stop) {
-				v.QueueClean()
-			}
+			// if(v.stop) {
+			// 	v.QueueClean()
+			// }
 
 			v.stop = false
 			v.skip = false
@@ -79,7 +79,21 @@ func (v *VoiceInstance) DCA(url string) {
 	options.Bitrate = 128
 	options.Application = "audio"	// favors quality over delay
 
-	encodeSession, err := dca.EncodeFile(url, options)
+	var videoID string = "LL-gyhZVvx0"
+	client := youtube.Client{}
+
+	video, err := client.GetVideo(videoID)
+	if err != nil {
+		log.Print("Error getting video data")
+	}
+
+	formats := video.Formats.WithAudioChannels()
+	downloadURL, err := client.GetStreamURL(video, &formats[0])
+	if err != nil {
+		log.Print("Error getting downloadURL")
+	}
+
+	encodeSession, err := dca.EncodeFile(downloadURL, options)
 	if err !=  nil {
 		log.Println("Failed to create an encoding session: ", err)
 	}
@@ -89,15 +103,14 @@ func (v *VoiceInstance) DCA(url string) {
 	stream := dca.NewStream(encodeSession, v.VoiceConn, done)
 	v.stream = stream
 
-	for {
-		select {
-		case err := <-done:
-			if err != nil && err != io.EOF {
-				log.Println("An error occured while encoding and streaming audio: ", err)
-			}
-			encodeSession.Cleanup()
-			return
+	select {
+	case err := <-done:
+		if err != nil && err != io.EOF {
+			log.Println("An error occured while encoding and streaming audio: ", err)
 		}
+		fmt.Print("Checkpoint")
+		encodeSession.Cleanup()
+		return
 	}
 }
 

@@ -34,7 +34,7 @@ func init() {
 // slash command handlers
 func init() {
 	discordSession.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if h, ok := CommandHandlers[i.ApplicationCommandData().Name]; ok { h(s, i) }
+		if h, ok := CommandHandlers[i.ApplicationCommandData().Name]; ok { h(s, i, &mutex, voiceInstances) }
 	})
 }
 
