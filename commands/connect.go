@@ -17,12 +17,6 @@ var Connect = discordgo.ApplicationCommand {
 	Options: 			[]*discordgo.ApplicationCommandOption{},
 }
 
-func resolveColor(color [3]int) int {
-	temp := (color[0] << 16) + (color[1] << 8) + color[2];
-
-	return temp;
-}
-
 func ConnectHandler(
 	s 	*discordgo.Session,
 	i 	*discordgo.InteractionCreate,
@@ -35,11 +29,14 @@ func ConnectHandler(
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("%v %v", s.State.User.Username, err),
 				Embeds: []*discordgo.MessageEmbed{
 					{
-						Title: "Embed example",
-						Color: resolveColor([3]int{255, 185, 150}),
+						Title: fmt.Sprintf("❌ %v %v", s.State.User.Username, err),
+						Color: helpers.ERROR,
+						Author: &discordgo.MessageEmbedAuthor{
+							IconURL: "https://cdn.discordapp.com/emojis/936451210100232283.webp",
+							Name: "Mr. Shiba",
+						},
 					},
 				},
 			},
