@@ -24,18 +24,17 @@ func ConnectHandler(
 	vi  map[string]*structs.VoiceInstance,
 ) {
 	// find which voice channel the "user" is in
-	_, err := helpers.FindUserVoiceState(s, i.GuildID, i.Member.User.ID)
+	voiceState, err := helpers.FindUserVoiceState(s, i.GuildID, i.Member.User.ID)
 	if err != nil {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Embeds: []*discordgo.MessageEmbed{
 					{
-						Title: fmt.Sprintf("❌ %v %v", s.State.User.Username, err),
+						Title: fmt.Sprintf("I %v", err),
 						Color: helpers.ERROR,
 						Author: &discordgo.MessageEmbedAuthor{
-							IconURL: "https://cdn.discordapp.com/emojis/936451210100232283.webp",
-							Name: "Mr. Shiba",
+							IconURL: "https://cdn.discordapp.com/emojis/936535532677251122.gif",
 						},
 					},
 				},
@@ -64,10 +63,27 @@ func ConnectHandler(
 		m.Unlock()
 	}
 
+	v.VoiceConn, err = s.ChannelVoiceJoin(i.GuildID, voiceState.VS.ChannelID, false, true)
+	if err != nil {
+		v.Stop()
+		return
+	}
+	v.VoiceConn.Speaking(false)
+
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "Bot has joined current voice channel",
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Title: "Mr. Shiba at your service",
+					Description: fmt.Sprintf("I have joined `%v` and will be bound to <#%v>", voiceState.Name, i.ChannelID),
+					Color: helpers.SUCCESS,
+					Author: &discordgo.MessageEmbedAuthor{
+						Name: " ",
+						IconURL: "https://cdn.discordapp.com/emojis/936535532677251122.gif",
+					},
+				},
+			},
 		},
 	})
 }

@@ -12,6 +12,7 @@ import (
 var (
 	Commands = []*discordgo.ApplicationCommand{
 		&commands.Connect,
+		&commands.Disconnect,
 	}
 
 	CommandHandlers = map[string]func(
@@ -21,5 +22,6 @@ var (
 		vi  map[string]*structs.VoiceInstance,
 	) {
 		"connect": commands.ConnectHandler,
+		"disconnect": commands.DisconnectHandler,
 	}
 )
